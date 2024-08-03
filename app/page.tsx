@@ -1,113 +1,276 @@
-import Image from "next/image";
+"use client"
+
+import React, { useEffect, useState } from "react";
+import { Box, Button, Container, Grid, Paper, Autocomplete, TextField, Typography, FormControlLabel, Switch, Select, MenuItem, SelectChangeEvent } from "@mui/material";
+import { createUser } from "@/controller/createUser";
+import { Institution } from "@/models/interfaces";
+import { fetchInstitutions } from "@/controller/fetchInstitutions";
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
+
+const baseData = {
+  first_name: '',
+  last_name: '',
+  dni: '',
+  email:'',
+  phone: '',
+  date_birth: '',
+  belongsToInstitution: 'Yes',
+  typeInstitution: '1',
+  institution: 'default',
+  area: 'default',
+  have_auth: 'No'
+}
+
+const MySwal = withReactContent(Swal)
 
 export default function Home() {
+  const [loading, setLoading] = useState<boolean>(true);
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [formData, setFormData] = useState(baseData);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const institutionData = await fetchInstitutions();
+        setInstitutions(institutionData);
+      } catch (error) {
+        console.log("error");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const handleAuthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prevState) => ({
+      ...prevState,
+      [name]: value
+    }));
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prevState) => ({
+      ...prevState,
+      [name]: value
+    }));
+  };
+
+  const handleSelectChange = (event: SelectChangeEvent<string>, child: React.ReactNode) => {
+    const { name, value } = event.target;
+    setFormData((prevState) => ({
+      ...prevState,
+      [name]: value
+    }));
+  };
+
+  const handleAutoCompleteChange = (event: React.SyntheticEvent, value: Institution | null) => {
+    setFormData((prevState) => ({
+      ...prevState,
+      institution: value ? value._id : ''
+    }));
+  };
+
+  const handleSwitchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData((prevState) => ({
+      ...prevState,
+      [name]: checked,
+      typeInstitution: checked ? '1' : prevState.typeInstitution
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    let  title = `<p>Desea crear un nuevo usuario y marcar su asistencia</p>`
+    MySwal.fire({
+      title,
+      showConfirmButton: true,
+      showLoaderOnConfirm: true,
+      preConfirm: async (updateUser) => {
+          try {
+            await createUser(formData);
+            return true
+          } catch(error) {
+            MySwal.showValidationMessage(`
+                Request failed: ${error}
+            `);
+          }
+      }
+    }).then((result) => {
+        if (result.isConfirmed) {
+          setFormData(baseData)
+          return MySwal.fire(<p>Usuario creado satisfactoriamente</p>)
+        }
+    })
+  };
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+      <Container maxWidth="sm">
+      <Grid
+        container
+        direction="column"
+        alignItems="center"
+        justifyContent="center"
+        sx={{ minHeight: "100vh" }}
+      >
+        <Grid item>
+          <Paper sx={{ padding: "1.2em", borderRadius: "0.5em" }}>
+            <Typography className="text-center font-bold !text-base md:!text-lg xl:!text-2xl" sx={{ mb: 1 }} variant="h4">Registro del Participante</Typography>
 
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+            <Box component="form" onSubmit={handleSubmit}>
+              <TextField
+                type="text"
+                name="first_name"
+                margin="normal"
+                fullWidth
+                label="Nombres"
+                value={formData.first_name}
+                size={'small'}
+                onChange={handleInputChange}
+                sx={{ mt: 2, mb: 1.5 }}
+              />
+              <TextField
+                type="text"
+                name="last_name"
+                margin="normal"
+                fullWidth
+                label="Apellidos"
+                value={formData.last_name}
+                size={'small'}
+                onChange={handleInputChange}
+                sx={{ mt: 1.5, mb: 1.5 }}
+              />
+              <TextField
+                type="text"
+                name="dni"
+                margin="normal"
+                fullWidth
+                label="Nº DNI"
+                size={'small'}
+                value={formData.dni}
+                onChange={handleInputChange}
+                sx={{ mt: 1.5, mb: 1.5 }}
+              />
+              <TextField
+                type="text"
+                name="phone"
+                margin="normal"
+                fullWidth
+                label="Nº de Celular (WhatsApp)"
+                value={formData.phone}
+                size={'small'}
+                onChange={handleInputChange}
+                sx={{ mt: 1.5, mb: 1.5 }}
+              />
+              {/*
+              <TextField
+                type="email"
+                name="email"
+                margin="normal"
+                fullWidth
+                label="Correo electronico"
+                value={formData.email}
+                size={'small'}
+                onChange={handleInputChange}
+                sx={{ mt: 1.5, mb: 1.5 }}
+              />
+            */}
+              <TextField
+                type="date"
+                name="date_birth"
+                margin="normal"
+                fullWidth
+                label="Fecha de nacimiento"
+                value={formData.date_birth}
+                size={'small'}
+                onChange={handleInputChange}
+                sx={{ mt: 1.5, mb: 1.5 }}
+                InputLabelProps={{ shrink: true }}
+              />
+                <>
+                  <Typography className="text-center font-bold !text-base md:!text-lg xl:!text-2xl" sx={{ mt: 1, mb: 1 }} variant="h5">¿Perteneces a alguna institución?</Typography>
+                  <Select
+                    size='small'
+                    name="belongsToInstitution"
+                    value={formData.belongsToInstitution}
+                    onChange={handleSelectChange}
+                    fullWidth
+                    sx={{ mt: 1, mb: 2 }}
+                  >
+                    <MenuItem value="Yes">Sí</MenuItem>
+                    <MenuItem value="No">No</MenuItem>
+                  </Select>
+                </>
+              {(formData.belongsToInstitution === "Yes") && (
+                <>
+                  <Typography className="text-center font-bold !text-base md:!text-lg xl:!text-2xl" sx={{ mt: 1, mb: 1 }} variant="h5">A qué tipo de institución perteneces:</Typography>
+                  <Select
+                    size='small'
+                    name="typeInstitution"
+                    value={formData.typeInstitution}
+                    onChange={handleSelectChange}
+                    fullWidth
+                    sx={{ mt: 1, mb: 2 }}
+                  >
+                    <MenuItem value="1">Parroquia</MenuItem>
+                    <MenuItem value="2">Colegio</MenuItem>
+                    <MenuItem value="3">Universidad</MenuItem>
+                    <MenuItem value="4">Congregación</MenuItem>
+                  </Select>
+                </>
+              )}
+              {formData.belongsToInstitution === "Yes" && (
+                <>
+                  <Typography className="text-center font-bold !text-base md:!text-lg xl:!text-2xl" sx={{ mt: 1, mb: 1 }} variant="h5">
+                    Indica la institución a la que perteneces:
+                  </Typography>
+                  <Autocomplete
+                    size='small'
+                    options={institutions.filter(institution => institution.type === parseInt(formData.typeInstitution))}
+                    getOptionLabel={(option) => {return `${option.name} - ${option.address}`}}
+                    onChange={handleAutoCompleteChange}
+                    renderInput={(params) => <TextField {...params} label="Selecciona una institución" fullWidth />}
+                    sx={{ mt: 1, mb: 2 }}
+                  />
+                </>
+              )}
+              {formData.typeInstitution === "2" && (
+              <>
+                <Typography className="text-center font-bold !text-base md:!text-lg xl:!text-2xl" sx={{ mt: 1, mb: 1 }} variant="h5">¿Tienes autorización?</Typography>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      name="have_auth"
+                      checked={formData.have_auth === 'Yes'}
+                      onChange={(e) => setFormData((prevState) => ({
+                        ...prevState,
+                        have_auth: e.target.checked ? 'Yes' : 'No'
+                      }))}
+                      color="primary"
+                    />
+                  }
+                  label={formData.have_auth === 'Yes' ? "Sí" : "No"}
+                  sx={{ mt: 2, mb: 2 }}
+                />
+              </>
+            )}
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                sx={{ mt: 3, mb: 2 }}
+              >
+                Registrar
+              </Button>
+            </Box>
+          </Paper>
+        </Grid>
+      </Grid>
+    </Container>
     </main>
   );
 }
