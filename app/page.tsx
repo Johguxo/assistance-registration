@@ -107,8 +107,16 @@ export default function Home() {
         }
     })
   };
+
+  const setNameInstitution = (optionInstitution: any) => {
+    let fullInstitution = optionInstitution.name;
+    if (optionInstitution.address) {
+      fullInstitution += fullInstitution + '-' + optionInstitution.address
+    }
+    return fullInstitution;
+  }
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
+    <main className="flex min-h-screen flex-col items-center justify-between">
       <Container maxWidth="sm">
       <Grid
         container
@@ -231,7 +239,7 @@ export default function Home() {
                   <Autocomplete
                     size='small'
                     options={institutions.filter(institution => institution.type === parseInt(formData.typeInstitution))}
-                    getOptionLabel={(option) => {return `${option.name} - ${option.address}`}}
+                    getOptionLabel={(option) => {return setNameInstitution(option)}}
                     onChange={handleAutoCompleteChange}
                     renderInput={(params) => <TextField {...params} label="Selecciona una institución" fullWidth />}
                     sx={{ mt: 1, mb: 2 }}
