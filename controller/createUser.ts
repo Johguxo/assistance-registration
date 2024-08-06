@@ -5,14 +5,13 @@ export const createUser = async (
     body: any
 ) => {
     try {
-        /*const response = await axios.post(`${urlBase}/users`, 
+        const response = await axios.post(`${process.env.URL_BASE}/users/by-user`, 
           body
         , {
             headers: {
                 "Content-Type": "application/json",
             }
-        });*/
-        const response = { status: true, data: {} }
+        });
         if (!response.status) {
             throw new Error('Network response was not ok');
         }

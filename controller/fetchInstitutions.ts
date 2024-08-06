@@ -4,7 +4,7 @@ import axios from 'axios';
 
 export const fetchInstitutions = async () => {
   try {
-      const response = await axios.get(`${urlBase}/institutions`);
+      const response = await axios.get(`${process.env.URL_BASE}/institutions`);
       if (!response.status) {
           throw new Error('Network response was not ok');
       }
