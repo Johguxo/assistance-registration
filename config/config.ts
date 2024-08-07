@@ -1,1 +1,1 @@
-export const urlBase = process.env.URL_BASE
+export const urlBase = 'http://localhost:5000'
