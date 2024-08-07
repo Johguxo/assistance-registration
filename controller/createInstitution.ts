@@ -6,7 +6,7 @@ import { Institution } from '@/models/interfaces';
 
 export const createInstitution = async (institution: Omit<Institution, '_id'>): Promise<Institution> => {
   try {
-    const response = await axios.post(`${urlBase}/institutions`, institution);
+    const response = await axios.post(`${urlBase}/institutions/by-user`, institution);
     if (response.status !== 201) { 
       throw new Error('Error creating institution');
     }

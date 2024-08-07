@@ -18,7 +18,7 @@ const baseData = {
   date_birth: '',
   belongsToInstitution: 'Yes',
   typeInstitution: '1',
-  institution: 'default',
+  institution: null,
   //have_auth: false
 }
 
@@ -40,7 +40,17 @@ const MySwal = withReactContent(Swal)
 export default function Home() {
   const [loading, setLoading] = useState<boolean>(true);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
-  const [formData, setFormData] = useState(baseData);
+  const [formData, setFormData] = useState<{
+    first_name: string,
+    last_name: string,
+    dni: string,
+    email: string,
+    phone: string,
+    date_birth: string,
+    belongsToInstitution: string,
+    typeInstitution: string;
+    institution: Institution | null;
+  }>(baseData);
   const [inputValue, setInputValue] = useState('');
   const [validationForms, setValidationForm] = useState(baseValidationForms);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
@@ -60,60 +70,19 @@ export default function Home() {
     fetchData();
   }, []);
 
-  const handleAutoCompleteInputChange = (event: React.ChangeEvent<{}>, value: string, reason: string) => {
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
-    }
+  
 
-    debounceTimer.current = setTimeout(() => {
-      if (reason === 'input' && !institutions.some(institution => institution.name.toLowerCase() === value.toLowerCase())) {
-        Swal.fire({
-          title: 'Institución no encontrada',
-          text: "¿Deseas agregar una nueva institución?",
-          input: 'text',
-          inputValue: value,
-          inputPlaceholder: 'Nombre de la nueva institución',
-          showCancelButton: true,
-          confirmButtonText: 'Agregar',
-          cancelButtonText: 'Cancelar',
-          preConfirm: (newInstitutionName) => {
-            if (!newInstitutionName) {
-              Swal.showValidationMessage('El nombre de la institución no puede estar vacío');
-            }
-            return newInstitutionName;
-          }
-        }).then((result) => {
-          if (result.isConfirmed) {
-            handleAddNewInstitution(result.value);
-          }
-        });
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (formData.belongsToInstitution == "Yes") {
+      if (!formData.institution) {
+        alertError('Tienes que seleccionar una institucion')
+      } else {
+        alertSuccess()
       }
-    }, 1500); //1.5 seg configura el tiempo que desees 
-  };
-
-  const handleAddNewInstitution = async (newInstitutionName: string) => {
-    try {
-      const newInstitution = await createInstitution({
-        name: newInstitutionName,
-        type: parseInt(formData.typeInstitution)
-      });
-      setInstitutions((prevInstitutions) => [...prevInstitutions, newInstitution]);
-      setFormData((prevState) => ({
-        ...prevState,
-        institution: newInstitution._id
-      }));
-      Swal.fire('¡Éxito!', 'Institución agregada correctamente', 'success');
-    } catch (error) {
-      Swal.fire('Error', 'No se pudo agregar la institución', 'error');
+    } else {
+      alertSuccess()
     }
-  };
-
-  const handleAuthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prevState) => ({
-      ...prevState,
-      [name]: value
-    }));
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -122,17 +91,14 @@ export default function Home() {
       ...prevState,
       [name]: value
     }));
-    console.log(name, value)
     let isError = true;
     if (name == 'dni') {
       if (value.toString().length == 8) isError = false
     } else if (name == 'phone') {
-      console.log("phonee")
       if (value.toString().length == 9) isError = false
     } else {
       if (e.target.validity.valid) isError = false
     }
-    console.log(isError)
     setValidationForm((prevState) => ({
       ...prevState,
       [name]: isError
@@ -148,41 +114,67 @@ export default function Home() {
   };
 
   const handleAutoCompleteChange = (event: React.SyntheticEvent<Element, Event>, value: Institution | null) => {
-    if (value && typeof value === 'string') {
-      Swal.fire({
-        title: 'Institución no encontrada',
-        text: "¿Deseas agregar una nueva institución?",
-        input: 'text',
-        inputPlaceholder: 'Nombre de la nueva institución',
-        showCancelButton: true,
-        confirmButtonText: 'Agregar',
-        cancelButtonText: 'Cancelar',
-        preConfirm: (newInstitutionName) => {
-          if (!newInstitutionName) {
-            Swal.showValidationMessage('El nombre de la institución no puede estar vacío');
-          }
-          return newInstitutionName;
-        }
-      }).then((result) => {
-        if (result.isConfirmed) {
-          handleAddNewInstitution(result.value);
-        }
-      });
+    if (value && value._id === '-1') {
+      alertNewInstitution()
     } else {
       setFormData((prevState) => ({
         ...prevState,
-        institution: value ? value._id : ''
+        institution: value
       }));
     }
   };
 
-  const handleSwitchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
-    setFormData((prevState) => ({
-      ...prevState,
-      [name]: checked,
-      typeInstitution: checked ? '1' : prevState.typeInstitution
-    }));
+  const filterOptions = (options: Institution[], state: any) => {
+    const filtered = options.filter(institution => institution.type === parseInt(formData.typeInstitution) && institution.name.toLowerCase().includes(state.inputValue.toLowerCase()));
+
+    if (state.inputValue !== '') {
+      filtered.push({
+        _id: '-1',
+        name: `No se encontró institución [Agregar una nueva: "${state.inputValue}"]`,
+        type: parseInt(formData.typeInstitution),
+      });
+    }
+
+    return filtered;
+  };
+
+  const alertNewInstitution = () => {
+    Swal.fire({
+      title: 'Institución no encontrada',
+      text: "¿Deseas agregar una nueva institución?",
+      input: 'text',
+      inputPlaceholder: 'Nombre de la nueva institución',
+      showCancelButton: true,
+      confirmButtonText: 'Agregar',
+      cancelButtonText: 'Cancelar',
+      preConfirm: (newInstitutionName) => {
+        if (!newInstitutionName) {
+          Swal.showValidationMessage('El nombre de la institución no puede estar vacío');
+        }
+        return newInstitutionName;
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        handleAddNewInstitution(result.value);
+      }
+    });
+  }
+
+  const handleAddNewInstitution = async (newInstitutionName: string) => {
+    try {
+      const newInstitution = await createInstitution({
+        name: newInstitutionName,
+        type: parseInt(formData.typeInstitution)
+      });
+      setInstitutions((prevInstitutions) => [...prevInstitutions, newInstitution]);
+      setFormData((prevState) => ({
+        ...prevState,
+        institution: newInstitution
+      }));
+      Swal.fire('¡Éxito!', 'Institución agregada correctamente', 'success');
+    } catch (error) {
+      Swal.fire('Error', 'No se pudo agregar la institución', 'error');
+    }
   };
 
   const alertError = (text: string) => {
@@ -195,21 +187,8 @@ export default function Home() {
     })
   }
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (formData.belongsToInstitution == "Yes") {
-      if (formData.institution == 'default') {
-        alertError('Tienes que seleccionar una institucion')
-      } else {
-        alertSuccess()
-      }
-    } else {
-      alertSuccess()
-    }
-  };
-
   const alertSuccess = () => {
-    let title = `<p>Desea crear un nuevo usuario y marcar su asistencia</p>`
+    let title = `<p>Deseas regsitrarte a la JAJ 😁</p>`
     MySwal.fire({
       title,
       showConfirmButton: true,
@@ -227,7 +206,7 @@ export default function Home() {
     }).then((result) => {
       if (result.isConfirmed) {
         setFormData(baseData);
-        return MySwal.fire(<p>Usuario creado satisfactoriamente</p>)
+        return MySwal.fire(<p>Estas registrado satisfactoriamente</p>)
       }
     })
   }
@@ -238,22 +217,6 @@ export default function Home() {
       fullInstitution += fullInstitution + '-' + optionInstitution.address
     }
     return fullInstitution;
-  }
-
-  const calculateAge = () => {
-    if (formData.date_birth) {
-      const birthDate = new Date(formData.date_birth);
-      const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDifference = today.getMonth() - birthDate.getMonth();
-
-      if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
-
-      return age;
-    }
-    return 20
   }
 
   return (
@@ -394,10 +357,13 @@ export default function Home() {
                     </Typography>
                     <Autocomplete
                       size='small'
-                      options={institutions.filter(institution => institution.type === parseInt(formData.typeInstitution))}
-                      getOptionLabel={(option) => option.name}
+                      value={formData.institution}
+                      //options={institutions.filter(institution => institution.type === parseInt(formData.typeInstitution))}
+                      options={institutions}
+                      filterOptions={filterOptions}
+                      getOptionLabel={(option) => setNameInstitution(option) }
                       onChange={handleAutoCompleteChange}
-                      onInputChange={handleAutoCompleteInputChange}
+                      //onInputChange={handleAutoCompleteInputChange}
                       renderInput={(params) => <TextField {...params} label="Selecciona una institución" fullWidth />}
                       sx={{ mt: 1, mb: 2 }}
                     />
