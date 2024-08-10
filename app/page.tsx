@@ -188,7 +188,7 @@ export default function Home() {
   }
 
   const alertSuccess = () => {
-    let title = `<p>Deseas regsitrarte a la JAJ 😁</p>`
+    let title = `<p>Deseas registrarte a la JAJ 😁</p>`
     MySwal.fire({
       title,
       showConfirmButton: true,
