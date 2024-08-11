@@ -214,7 +214,7 @@ export default function Home() {
   const setNameInstitution = (optionInstitution: any) => {
     let fullInstitution = optionInstitution.name;
     if (optionInstitution.address) {
-      fullInstitution += fullInstitution + '-' + optionInstitution.address
+      fullInstitution = fullInstitution + '-' + optionInstitution.address
     }
     return fullInstitution;
   }
